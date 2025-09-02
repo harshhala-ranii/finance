@@ -2,9 +2,11 @@ from sqlalchemy import create_engine, Column, Integer, Float, String, Date, Meta
 from sqlalchemy.orm import declarative_base, sessionmaker
 import pandas as pd
 import datetime
-
+import os
+from dotenv import load_dotenv
 # Update with your actual PostgreSQL credentials
-DB_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/finance_db"
+load_dotenv()
+DB_URL = os.getenv("DB_URL")
 
 engine = create_engine(DB_URL)
 SessionLocal = sessionmaker(bind=engine)
