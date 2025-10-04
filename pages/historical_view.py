@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from db_utils import get_all_expenses, get_monthly_summary, get_expenses_by_category, list_expense_months
+from db_utils import get_all_expenses, get_monthly_summary, get_expenses_by_category, list_expense_months, delete_expense
 
 def historical_view_page():
     st.header("📚 Historical Data & Analytics")
@@ -112,6 +112,44 @@ def historical_view_page():
                 df_expenses.style.format({'Amount': '₹{:,.2f}'}),
                 use_container_width=True
             )
+            
+            # Delete expense section
+            st.subheader("🗑️ Delete Expense")
+            if len(df_expenses) > 0:
+                # Create a selectbox for expense selection
+                expense_options = []
+                for _, row in df_expenses.iterrows():
+                    expense_options.append(f"{row['Date']} - {row['Month']} - {row['Category']} - ₹{row['Amount']:,.2f}")
+                
+                selected_expense = st.selectbox(
+                    "Select expense to delete:", 
+                    expense_options,
+                    key="delete_historical_expense"
+                )
+                
+                if selected_expense and st.button("Delete Selected Expense", type="secondary"):
+                    # Find the expense ID
+                    selected_index = expense_options.index(selected_expense)
+                    expense_row = df_expenses.iloc[selected_index]
+                    
+                    # Get the actual expense from database to get ID
+                    expense_to_delete = None
+                    for exp in expenses:
+                        if (str(exp.date) == str(expense_row['Date']) and 
+                            exp.month == expense_row['Month'] and
+                            exp.category == expense_row['Category'] and 
+                            exp.amount == expense_row['Amount']):
+                            expense_to_delete = exp
+                            break
+                    
+                    if expense_to_delete:
+                        if delete_expense(expense_to_delete.id):
+                            st.success(f"✅ Expense deleted: {expense_row['Category']} - ₹{expense_row['Amount']:,.2f}")
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to delete expense. Please try again.")
+                    else:
+                        st.error("❌ Could not find expense to delete.")
             
             # Summary statistics
             total_amount = df_expenses['Amount'].sum()

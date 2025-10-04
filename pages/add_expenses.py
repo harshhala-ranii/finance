@@ -1,6 +1,6 @@
 import streamlit as st
 import datetime
-from db_utils import add_expense, get_expenses, list_expense_months
+from db_utils import add_expense, get_expenses, list_expense_months, delete_expense, get_expense_by_id
 
 def add_expenses_page(categories):
     st.header("📝 Add Expense")
@@ -41,11 +41,49 @@ def add_expenses_page(categories):
                 st.metric("Total Spent", f"₹{total_spent:,.2f}")
                 st.metric("Number of Expenses", expense_count)
                 
-                # Show expenses table
+                # Show expenses table with delete functionality
                 st.dataframe(
                     df.sort_values("Date", ascending=False).style.format({'Amount': '₹{:,.2f}'}),
                     use_container_width=True
                 )
+                
+                # Delete expense section
+                st.subheader("🗑️ Delete Expense")
+                if len(df) > 0:
+                    # Create a selectbox for expense selection
+                    expense_options = []
+                    for _, row in df.iterrows():
+                        expense_options.append(f"{row['Date']} - {row['Category']} - ₹{row['Amount']:,.2f}")
+                    
+                    selected_expense = st.selectbox(
+                        "Select expense to delete:", 
+                        expense_options,
+                        key=f"delete_expense_{selected_month}"
+                    )
+                    
+                    if selected_expense and st.button("Delete Selected Expense", type="secondary"):
+                        # Find the expense ID
+                        selected_index = expense_options.index(selected_expense)
+                        expense_row = df.iloc[selected_index]
+                        
+                        # Get the actual expense from database to get ID
+                        expenses = get_expenses(selected_month)
+                        expense_to_delete = None
+                        for exp in expenses:
+                            if (str(exp.date) == str(expense_row['Date']) and 
+                                exp.category == expense_row['Category'] and 
+                                exp.amount == expense_row['Amount']):
+                                expense_to_delete = exp
+                                break
+                        
+                        if expense_to_delete:
+                            if delete_expense(expense_to_delete.id):
+                                st.success(f"✅ Expense deleted: {expense_row['Category']} - ₹{expense_row['Amount']:,.2f}")
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to delete expense. Please try again.")
+                        else:
+                            st.error("❌ Could not find expense to delete.")
             else:
                 st.info(f"No expenses found for {selected_month}")
         else:
@@ -77,5 +115,43 @@ def add_expenses_page(categories):
             df_current.sort_values("Date", ascending=False).style.format({'Amount': '₹{:,.2f}'}),
             use_container_width=True
         )
+        
+        # Delete expense section for current month
+        st.subheader("🗑️ Delete Current Month Expense")
+        if len(df_current) > 0:
+            # Create a selectbox for expense selection
+            current_expense_options = []
+            for _, row in df_current.iterrows():
+                current_expense_options.append(f"{row['Date']} - {row['Category']} - ₹{row['Amount']:,.2f}")
+            
+            selected_current_expense = st.selectbox(
+                "Select expense to delete:", 
+                current_expense_options,
+                key=f"delete_current_expense_{month_key}"
+            )
+            
+            if selected_current_expense and st.button("Delete Selected Expense", type="secondary", key="delete_current_btn"):
+                # Find the expense ID
+                selected_index = current_expense_options.index(selected_current_expense)
+                expense_row = df_current.iloc[selected_index]
+                
+                # Get the actual expense from database to get ID
+                expenses = get_expenses(month_key)
+                expense_to_delete = None
+                for exp in expenses:
+                    if (str(exp.date) == str(expense_row['Date']) and 
+                        exp.category == expense_row['Category'] and 
+                        exp.amount == expense_row['Amount']):
+                        expense_to_delete = exp
+                        break
+                
+                if expense_to_delete:
+                    if delete_expense(expense_to_delete.id):
+                        st.success(f"✅ Expense deleted: {expense_row['Category']} - ₹{expense_row['Amount']:,.2f}")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to delete expense. Please try again.")
+                else:
+                    st.error("❌ Could not find expense to delete.")
     else:
         st.info("No expenses added yet for this month.")

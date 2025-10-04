@@ -124,3 +124,28 @@ def get_monthly_summary():
     
     session.close()
     return summary_data
+
+def delete_expense(expense_id):
+    """Delete an expense by ID"""
+    session = SessionLocal()
+    try:
+        expense = session.query(Expense).filter_by(id=expense_id).first()
+        if expense:
+            session.delete(expense)
+            session.commit()
+            session.close()
+            return True
+        else:
+            session.close()
+            return False
+    except Exception as e:
+        session.rollback()
+        session.close()
+        return False
+
+def get_expense_by_id(expense_id):
+    """Get a specific expense by ID"""
+    session = SessionLocal()
+    expense = session.query(Expense).filter_by(id=expense_id).first()
+    session.close()
+    return expense
