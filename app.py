@@ -10,13 +10,14 @@ categories = [
 
 page = st.sidebar.radio(
     "📌 Navigate", 
-    ["💵 Add Monthly Balance", "📊 Balance Overview", "📝 Add Expenses", "📈 Analysis"]
+    ["💵 Add Monthly Balance", "📊 Balance Overview", "📝 Add Expenses", "📈 Analysis", "📚 Historical View"]
 )
 
 from pages.add_balance import add_balance_page
 from pages.balance_overview import balance_overview_page
 from pages.add_expenses import add_expenses_page
 from pages.analysis import analysis_page
+from pages.historical_view import historical_view_page
 
 if page == "💵 Add Monthly Balance":
     add_balance_page(categories)
@@ -26,3 +27,5 @@ elif page == "📝 Add Expenses":
     add_expenses_page(categories)
 elif page == "📈 Analysis":
     analysis_page()
+elif page == "📚 Historical View":
+    historical_view_page()
